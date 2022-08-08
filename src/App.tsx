@@ -1,149 +1,140 @@
 import React, { useReducer } from "react";
-export async function login({
-  username,
-  password,
-}: {
-  username: string;
-  password: string;
-}): Promise<any> {
-  return new Promise<void>((resolve, reject) => {
-    setTimeout(() => {
-      if (username && password) {
-        resolve();
-      } else {
-        reject();
-      }
-    }, 1000);
-  });
-}
 
-const initialState: LoginState = {
-  username: "",
-  password: "",
-  isLoading: false,
-  error: "",
-  isLoggedIn: false,
-  variant: "login",
+const initialState: surveyResults = {
+  pulseID: "2342343234",
+  email: "",
+  dateModified: new Date(),
+  responses: {},
 };
 
-interface LoginState {
-  username: string;
-  password: string;
-  isLoading: boolean;
-  error: string;
-  isLoggedIn: boolean;
-  variant: "login" | "forgetPassword";
+interface surveyResults {
+  pulseID: string;
+  email: string;
+  dateModified: Date;
+  responses: any;
 }
 
-type LoginAction =
-  | { type: "login" | "success" | "error" | "logOut" }
-  | { type: "field"; fieldName: string; payload: string };
+type SurveyActions = {
+  type: "SET_RESPONSE";
+  fieldName: string;
+  payload: string | number;
+};
 
-function loginReducer(state: LoginState, action: LoginAction) {
+function surveyReducer(state: surveyResults, action: SurveyActions) {
   switch (action.type) {
-    case "field": {
+    case "SET_RESPONSE": {
       return {
         ...state,
-        [action.fieldName]: action.payload,
+        dateModified: new Date(),
+        responses: {
+          ...state.responses,
+          [action.fieldName]: action.payload,
+        },
       };
     }
-    case "login": {
-      return {
-        ...state,
-        error: "",
-        isLoading: true,
-      };
-    }
-    case "success": {
-      return {
-        ...state,
-        isLoggedIn: true,
-        isLoading: false,
-      };
-    }
-    case "error": {
-      return {
-        ...state,
-        error: "Incorrect username or password!",
-        isLoggedIn: false,
-        isLoading: false,
-        username: "",
-        password: "",
-      };
-    }
-    case "logOut": {
-      return {
-        ...state,
-        isLoggedIn: false,
-      };
-    }
+
     default:
-      return state;
+      throw new Error("No Action");
   }
 }
 
 export default function LoginUseReducer() {
-  const [state, dispatch] = useReducer(loginReducer, initialState);
-  const { username, password, isLoading, error, isLoggedIn } = state;
+  const [state, dispatch] = useReducer(surveyReducer, initialState);
+  // const { username, password, isLoading, error, isLoggedIn } = state;
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const softwareList = [
+    {
+      name: "PhotoShop",
+      fieldName: "adobe_photoshop",
+    },
+    {
+      name: "Microsoft Word",
+      fieldName: "microsoft_word",
+    },
+  ];
 
-    dispatch({ type: "login" });
-
-    try {
-      await login({ username, password });
-      dispatch({ type: "success" });
-    } catch (error) {
-      dispatch({ type: "error" });
-    }
+  const saveResponse = (fieldName: string, payload: any) => {
+    dispatch({
+      type: "SET_RESPONSE",
+      fieldName,
+      payload,
+    });
   };
 
   return (
     <div className="App">
-      <div className="login-container">
-        {isLoggedIn ? (
-          <>
-            <h1>Welcome {username}!</h1>
-            <button onClick={() => dispatch({ type: "logOut" })}>
-              Log Out
-            </button>
-          </>
-        ) : (
-          <form className="form" onSubmit={onSubmit}>
-            {error && <p className="error">{error}</p>}
-            <p>Please Login!</p>
-            <input
-              type="text"
-              placeholder="username"
-              value={username}
-              onChange={(e) =>
-                dispatch({
-                  type: "field",
-                  fieldName: "username",
-                  payload: e.currentTarget.value,
-                })
-              }
-            />
-            <input
-              type="password"
-              placeholder="password"
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) =>
-                dispatch({
-                  type: "field",
-                  fieldName: "password",
-                  payload: e.currentTarget.value,
-                })
-              }
-            />
-            <button className="submit" type="submit" disabled={isLoading}>
-              {isLoading ? "Logging in..." : "Log In"}
-            </button>
-          </form>
-        )}
-      </div>
+      <pre style={{ whiteSpace: "pre-wrap" }}>{JSON.stringify(state)}</pre>
+      <hr />
+      {state.responses?.adobe_photoshop}
+      <hr />
+      <input
+        type="text"
+        placeholder="username"
+        // value={username}
+        onChange={(e) =>
+          dispatch({
+            type: "SET_RESPONSE",
+            fieldName: "username",
+            payload: e.currentTarget.value,
+          })
+        }
+      />
+
+      <input
+        type="password"
+        placeholder="password"
+        autoComplete="new-password"
+        // value={password}
+        onChange={(e) =>
+          dispatch({
+            type: "SET_RESPONSE",
+            fieldName: "password",
+            payload: e.currentTarget.value,
+          })
+        }
+      />
+      {softwareList.map((software, i) => (
+        <fieldset key={i}>
+          <h2>{software.name}</h2>
+          <input
+            type="radio"
+            checked={state.responses[software.fieldName] === 5}
+            onChange={() => saveResponse(software.fieldName, 5)}
+          />
+          5
+          <input
+            type="radio"
+            checked={state.responses[software.fieldName] === 4}
+            onChange={() => saveResponse(software.fieldName, 4)}
+          />
+          4
+          <input
+            type="radio"
+            checked={state.responses[software.fieldName] === 3}
+            onChange={() => saveResponse(software.fieldName, 3)}
+          />
+          3
+          <input
+            type="radio"
+            value="2"
+            checked={state.responses[software.fieldName] === 2}
+            onChange={() => saveResponse(software.fieldName, 2)}
+          />
+          2
+          <input
+            type="radio"
+            checked={state.responses[software.fieldName] === 1}
+            onChange={() => saveResponse(software.fieldName, 1)}
+          />
+          1
+          <input
+            type="radio"
+            checked={state.responses[software.fieldName] === 0}
+            onChange={() => saveResponse(software.fieldName, 0)}
+          />
+          0
+        </fieldset>
+      ))}
     </div>
   );
 }
