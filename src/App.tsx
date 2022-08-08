@@ -1,48 +1,149 @@
-import React from "react";
-import "./App.css";
+import React, { useReducer } from "react";
+export async function login({
+  username,
+  password,
+}: {
+  username: string;
+  password: string;
+}): Promise<any> {
+  return new Promise<void>((resolve, reject) => {
+    setTimeout(() => {
+      if (username && password) {
+        resolve();
+      } else {
+        reject();
+      }
+    }, 1000);
+  });
+}
 
-const myReducer = (state: {}, action: { type: string; payload: any }) => {
-  switch (action.type) {
-    case "SET_FILTER":
-      return {
-        ...state,
-        filter: action.payload,
-      };
-    case "SET_USER":
-      return {
-        ...state,
-        user: action.payload,
-      };
-    case "SET_SELECTED_USER":
-      return {
-        ...state,
-        selectedUser: action.payload,
-      };
-    default:
-      throw new Error("no action");
-  }
+const initialState: LoginState = {
+  username: "",
+  password: "",
+  isLoading: false,
+  error: "",
+  isLoggedIn: false,
+  variant: "login",
 };
 
-function App() {
-  const [filter, filterSet] = React.useState("");
-  const [user, userSet] = React.useState(null);
-  const [selectedUser, selectedUserSet] = React.useState(null);
-  const [state, dispatch] = React.useReducer(myReducer, {
-    user: [],
-    filter: "",
-    selectedUser: null,
-  });
+interface LoginState {
+  username: string;
+  password: string;
+  isLoading: boolean;
+  error: string;
+  isLoggedIn: boolean;
+  variant: "login" | "forgetPassword";
+}
+
+type LoginAction =
+  | { type: "login" | "success" | "error" | "logOut" }
+  | { type: "field"; fieldName: string; payload: string };
+
+function loginReducer(state: LoginState, action: LoginAction) {
+  switch (action.type) {
+    case "field": {
+      return {
+        ...state,
+        [action.fieldName]: action.payload,
+      };
+    }
+    case "login": {
+      return {
+        ...state,
+        error: "",
+        isLoading: true,
+      };
+    }
+    case "success": {
+      return {
+        ...state,
+        isLoggedIn: true,
+        isLoading: false,
+      };
+    }
+    case "error": {
+      return {
+        ...state,
+        error: "Incorrect username or password!",
+        isLoggedIn: false,
+        isLoading: false,
+        username: "",
+        password: "",
+      };
+    }
+    case "logOut": {
+      return {
+        ...state,
+        isLoggedIn: false,
+      };
+    }
+    default:
+      return state;
+  }
+}
+
+export default function LoginUseReducer() {
+  const [state, dispatch] = useReducer(loginReducer, initialState);
+  const { username, password, isLoading, error, isLoggedIn } = state;
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    dispatch({ type: "login" });
+
+    try {
+      await login({ username, password });
+      dispatch({ type: "success" });
+    } catch (error) {
+      dispatch({ type: "error" });
+    }
+  };
 
   return (
     <div className="App">
-      <form>
-        <input type="text" placeholder="Title" />
-        <input type="text" placeholder="Desc" />
-        <input type="text" placeholder="Price" />
-        <input type="text" placeholder="Category" />
-      </form>
+      <div className="login-container">
+        {isLoggedIn ? (
+          <>
+            <h1>Welcome {username}!</h1>
+            <button onClick={() => dispatch({ type: "logOut" })}>
+              Log Out
+            </button>
+          </>
+        ) : (
+          <form className="form" onSubmit={onSubmit}>
+            {error && <p className="error">{error}</p>}
+            <p>Please Login!</p>
+            <input
+              type="text"
+              placeholder="username"
+              value={username}
+              onChange={(e) =>
+                dispatch({
+                  type: "field",
+                  fieldName: "username",
+                  payload: e.currentTarget.value,
+                })
+              }
+            />
+            <input
+              type="password"
+              placeholder="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) =>
+                dispatch({
+                  type: "field",
+                  fieldName: "password",
+                  payload: e.currentTarget.value,
+                })
+              }
+            />
+            <button className="submit" type="submit" disabled={isLoading}>
+              {isLoading ? "Logging in..." : "Log In"}
+            </button>
+          </form>
+        )}
+      </div>
     </div>
   );
 }
-
-export default App;
